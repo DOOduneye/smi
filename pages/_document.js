@@ -2,7 +2,7 @@ import { Html, Head, Main, NextScript } from 'next/document';
 
 const Document = () => {
     return (
-        <Html lang="en" className="h-full">
+        <Html lang="en" className="h-screen w-screen">
         <Head>
             <meta name="description" content="SMI" />
             <link rel="icon" href="/favicon.ico" />

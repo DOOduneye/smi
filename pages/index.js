@@ -6,9 +6,9 @@ import Title from '../components/Title'
 
 export default function Home() {
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen py-2 gap-3">
+    <main className="pt-10">
       <Title />
-      <div className="flex flex-row gap-3">
+      <div className="flex flex-col items-center justify-center py-5 gap-3">
         <Input />
       </div>
     </main>
