@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SMI</title>
+    
+    <base href="/">
+    <script type="module" src="../tailwind.config.js" defer></script>
+    <script type="module" src="../src/app.js" defer></script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link href="output.css" rel="stylesheet" type='text/css'>
+</head>
+
+<body class="h-full">
+  <main className="pt-10">
+    <h1 className="md:text-9xl text-8xl text-center font-normal bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-800 p-2">
+      Spotlight
+    </h1>
+    <div className="flex flex-col items-center justify-center py-5 gap-3">
+      <label className="flex flex-row border border-slate-300 rounded-md">
+        <span className="sr-only">Search</span>
+        <span className="relative inset-y-0 left-3 flex items-center">
+            <!-- <FontAwesomeIcon icon={faMagnifyingGlass} className="text-slate-400" /> -->
+        </span>
+        <input className="placeholder:italic placeholder:text-slate-400 text-slate-500 flex bg-white w-full py-2 pl-6 pr-3 shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 sm:text-sm" placeholder="Search for songs..." type="text" name="search"/>
+        <button className="py-2 px-4">
+          <span className="text-gray-400">Search</span>
+        </button>
+      </label>
+    </div>
+  </main>
+</body>
+
+
+</html>

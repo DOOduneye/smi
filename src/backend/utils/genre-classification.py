@@ -1,12 +1,13 @@
 import os
-import pandas as pd
 import time
-import spacy 
+
+import pandas as pd
+import spacy
 
 class GenreClassification():
     def __init__(self, lang: str='en_core_web_lg', csv: str='genres') -> None:
         self.nlp = spacy.load(lang)
-        self.path = os.path.dirname(os.path.abspath(__file__))
+        self.path = os.path.dirname('backend/')
         self.genres = self.load_genres(csv)
         print(self.genres)
         
@@ -19,7 +20,7 @@ class GenreClassification():
         Returns:
             list: List of genres.
         """
-        return pd.read_csv(os.path.join(self.path, csv + '.csv'))
+        return pd.read_csv(os.path.join(self.path + '/res/' + csv + '.csv'))
     
     def load_nlp(self, nlp):
         """Load a different spacy model.
@@ -34,7 +35,7 @@ class GenreClassification():
     
     def tokenize(self, string: str) -> list:
         """Tokenize a string into a list of tokens, removing punctuation and whitespace.    
-
+        
         Args:
             string (str): String to tokenize.
 
@@ -85,10 +86,13 @@ class GenreClassification():
         similar_genres.reset_index(drop=True, inplace=True)
         
         return (similar_genres, "~" + str(round(abs(start_time - time.time()), 2)) + "ms")
+
     
-print(GenreClassification('en_core_web_lg').genre_similarity_v2('I like to listen to rock music'))
+print(GenreClassification('en_core_web_lg', 'genres').genre_similarity_v2('I want to die surrounded by hookers and cocaine'))
 
 
-# TODO: See how long it takes to handle all genres -> c
+# TODO: See how long it takes to handle all genres -> 
     # If too long, we can instead do hiearichal, where we first classify into genre groups, then into genres.
     # genre_group -> major genres, subgenres, sub-subgenres until we find the best match.
+
+    # Sample lyrics, titles, etc
