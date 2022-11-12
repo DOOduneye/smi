@@ -134,10 +134,11 @@ print(GenreClassification('en_core_web_lg', 'mainstream').genre_similarity('Dino
 print("--- %s seconds ---" % round((time.time() - start_time)))
 
 
-# TODO: See how long it takes to handle all genres -> 
-    # If too long, we can instead do hiearichal, where we first classify into genre groups, then into genres.
-    # genre_group -> major genres, subgenres, sub-subgenres until we find the best match.
-
-    # Sample lyrics, titles, etc
 
 
+# TODO: Genre Tree
+    # Major genres
+    # Subgenres
+    # Subsubgenres
+    # etc.
+    # https://en.wikipedia.org/wiki/List_of_music_genres
