@@ -1,19 +1,21 @@
 import os
 import time
 import requests as req
+from numba import jit
+import numpy as np
 
 import pandas as pd
 import spacy
-from spacy.lookups import Lookups
+from definition import Definition as defi
 
 class GenreClassification():
-    def __init__(self, lang: str='en_core_web_lg', csv: str='genres') -> None:
-        self.nlp = spacy.load(lang)
-        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-        self.genres = ""
-        self.__get_list(csv)
+    def __init__(self, csv: str='genres') -> None:
+        self.nlp = spacy.load('en_core_web_lg')
+        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..') # Path to the root directory
+        self.genres = None
+        self.__load_genres(csv) # Load the list of genres
 
-    def __get_list(self, csv: str) -> list:
+    def __load_genres(self, csv: str) -> list:
         """If the csv file exists, load the list of genres from the csv file.
         Otherwise, download the list of genres from Wikipedia and save it to a csv file.
         
@@ -25,18 +27,10 @@ class GenreClassification():
         """
 
         if not os.path.exists(f'{self.path}/data/genres_with_definitons.csv'):
-            self.genres = self.load_genres(csv)
-            self.__save_definitions()
+            self.genres = self.__add_definitions(pd.read_csv(f'{self.path}/data/{csv}.csv'))
+            self.genres.to_csv(f'{self.path}/data/genres_with_definitons.csv', index=False)
         else:
             self.genres = pd.read_csv(f'{self.path}/data/genres_with_definitons.csv')
-    
-    def __save_definitions(self):
-        """Save the definitions of the genres to a csv file.
-
-        Returns:
-            None
-        """
-        self.genres.to_csv(f'{self.path}/data/genres_with_definitons.csv', index=False)
 
     def __add_definitions(self, dataframe) -> pd.DataFrame:
         """Add definitions to a dataframe of genres.
@@ -50,76 +44,43 @@ class GenreClassification():
 
         definitions = []
         for genre in dataframe.genre:
-            definitions.append(self.__remove_stops_and_punctions(self.__get_definition(genre)))
-        
+            defined_word = defi().get_definition(genre)
+            n_grammed = self.__generate_n_grams(defined_word)
+            definitions.append(n_grammed)
         dataframe['definition'] = definitions
 
         return dataframe
 
-    def __remove_stops_and_punctions(self, string: str) -> str:
-        """Remove stopwords and punctuation from a string.
+    def __generate_n_grams(self, string: str, ngram: int=2) -> list:
+            """Generate n-grams from a string.
 
-        Args:
-            string (str): String to remove stopwords and punctuation from.
+            Thanks to: https://www.analyticsvidhya.com/blog/2021/09/what-are-n-grams-and-how-to-implement-them-in-python/
 
-        Returns:
-            str: String without stopwords and punctuation.
-        """
-        return ' '.join([token.text for token in self.nlp(string) if not token.is_stop and not token.is_punct])
+            Args:
+                text (str): String to generate n-grams from.
+                ngram (int): Number of words in the n-grams.
 
-    def __get_definition(self, genre: str, ending: str='music') -> str:
-        """Get the definition of a genre from Wikipedia.
+            Returns:
+                list: List of n-grams.
+            """
+            words = [word for word in string.split(" ") if word not in self.nlp.Defaults.stop_words]
+            temp = zip(*[words[i:] for i in range(0,ngram)])
+            ans = [' '.join(ngram) for ngram in temp]
+            return ans
 
-        Args:
-            genre (str): Genre to get the definition of.
-
-        Returns:
-            str: Definition of the genre.
-        """
-        
-        url = "https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles=" + genre + ' ' + ending
-        response = req.get(url)
-        data = response.json()
-        if 'error' in data:
-            return ''
-        elif 'missing' in data['query']['pages'][list(data['query']['pages'].keys())[0]] and ending == '':
-            return ''
-        elif 'missing' in data['query']['pages'][list(data['query']['pages'].keys())[0]]:
-            return self.__get_definition(genre, ending='')
-        else:
-            return data['query']['pages'][list(data['query']['pages'].keys())[0]]['extract']
-
-    def load_nlp(self, nlp):
-        """Load a different spacy model.
-        
-        Args:
-            nlp (str): Name of the spacy model to load.
-            
-        Returns:
-            None
-        """
-        self.nlp = nlp
-    
-    def load_genres(self, csv: str='genre') -> list:
-        """Load a list of genres from a csv file.
-
-        Args:
-            csv (str): Path to csv file.
-
-        Returns:
-            list: List of genres.
-        """
-        return self.__add_definitions(pd.read_csv(f'{self.path}/data/{csv}.csv'))
-
-    
     def genre_similarity(self, string: str, limit :int = 10) -> list:
+
+        # Use n -grams to parse genres with multiple words
         similar_genres = []
         
         for genre in self.genres.genre:
             definition = str(self.genres.loc[self.genres.genre == genre].definition.values[0])
-            current_similarity = self.nlp(string).similarity(self.nlp(genre + definition))
-            similar_genres.append((genre, current_similarity))
-        
+            if definition != '':
+                similarity = self.nlp(string).similarity(self.nlp(genre + definition))
+            else:
+                similarity = self.nlp(string).similarity(self.nlp(genre))
+
+            similar_genres.append((genre, similarity))
         similar_genres = pd.DataFrame(similar_genres, columns=['genre', 'similarity'])
         similar_genres.sort_values(by='similarity', ascending=False, inplace=True)
         similar_genres.reset_index(drop=True, inplace=True)
@@ -127,14 +88,45 @@ class GenreClassification():
         return similar_genres[:limit if limit < len(similar_genres) else len(similar_genres)]
 
 
+    # def most_similar(self, word, topn=5):
+    #     """Get the most similar words to a word.
+
+    #     Args:
+    #         word (str): Word to get the most similar words to.
+    #         topn (int): Number of similar words to return.
+
+    #     Returns:
+    #         list: List of tuples containing the most similar words and their similarity.
+    #     """
+    #     word = self.nlp(word)
+    #     return sorted(word, key=lambda w: self.cosine_similarity_numba(w.vector, word.vector), reverse=True)
+
+
+    # @jit(nopython=True)
+    # def cosine_similarity_numba(u:np.ndarray, v:np.ndarray):
+    #     assert(u.shape[0] == v.shape[0])
+    #     uv = 0
+    #     uu = 0
+    #     vv = 0
+    #     for i in range(u.shape[0]):
+    #         uv += u[i]*v[i]
+    #         uu += u[i]*u[i]
+    #         vv += v[i]*v[i]
+    #     cos_theta = 1
+    #     if uu != 0 and vv != 0:
+    #         cos_theta = uv/np.sqrt(uu*vv)
+    #     return cos_theta
+
+
 
 start_time = time.time()    
 print('Loading model...')
-print(GenreClassification('en_core_web_lg', 'mainstream').genre_similarity('Dinosaurs'))
+# print(GenreClassification('en_core_web_lg', 'mainstream').genre_similarity('Dinosaurs'))
 print("--- %s seconds ---" % round((time.time() - start_time)))
+print(GenreClassification('mainstream').genre_similarity('Dinosaurs'))
 
-
-
+# IDEAS: Take n-grams from the definition and compare them to the n-grams of the string. 
+    #  Use this to increase the similarity score.
 
 # TODO: Genre Tree
     # Major genres
