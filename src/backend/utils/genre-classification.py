@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import spacy
 from definition import Definition as defi
+from preprocessing import Preprocessor as prep
 
 class GenreClassification():
     def __init__(self, csv: str='genres') -> None:
@@ -30,7 +31,7 @@ class GenreClassification():
             self.genres = self.__add_definitions(pd.read_csv(f'{self.path}/data/{csv}.csv'))
             self.genres.to_csv(f'{self.path}/data/genres_with_definitons.csv', index=False)
         else:
-            self.genres = pd.read_csv(f'{self.path}/data/genres_with_definitons.csv')
+            self.genres = pd.read_csv(f'{self.path}/data/genres_with_definitons.csv') 
 
     def __add_definitions(self, dataframe) -> pd.DataFrame:
         """Add definitions to a dataframe of genres.
@@ -42,11 +43,13 @@ class GenreClassification():
             pd.DataFrame: Dataframe of genres with definitions.
         """
 
+        definitions_n_grammed = []
         definitions = []
+
         for genre in dataframe.genre:
             defined_word = defi().get_definition(genre)
-            n_grammed = self.__generate_n_grams(defined_word)
-            definitions.append(n_grammed)
+            definitions.append(defined_word)
+
         dataframe['definition'] = definitions
 
         return dataframe
@@ -69,18 +72,16 @@ class GenreClassification():
             return ans
 
     def genre_similarity(self, string: str, limit :int = 10) -> list:
-
-        # Use n -grams to parse genres with multiple words
         similar_genres = []
         
         for genre in self.genres.genre:
-            definition = str(self.genres.loc[self.genres.genre == genre].definition.values[0])
-            if definition != '':
-                similarity = self.nlp(string).similarity(self.nlp(genre + definition))
-            else:
-                similarity = self.nlp(string).similarity(self.nlp(genre))
+            input = self.nlp(prep().remove_gendered_language(prep().remove_stops_and_punctions(string)))
+            print(input)
+            genre_information = self.nlp(genre + str(self.genres.loc[self.genres.genre == genre].definition.values[0]))
 
+            similarity = input.similarity(genre_information)
             similar_genres.append((genre, similarity))
+
         similar_genres = pd.DataFrame(similar_genres, columns=['genre', 'similarity'])
         similar_genres.sort_values(by='similarity', ascending=False, inplace=True)
         similar_genres.reset_index(drop=True, inplace=True)
@@ -88,45 +89,30 @@ class GenreClassification():
         return similar_genres[:limit if limit < len(similar_genres) else len(similar_genres)]
 
 
-    # def most_similar(self, word, topn=5):
-    #     """Get the most similar words to a word.
+    def most_similar(self, word, topn=5):
+        """Get the most similar words to a word.
 
-    #     Args:
-    #         word (str): Word to get the most similar words to.
-    #         topn (int): Number of similar words to return.
+        Args:
+            word (str): Word to get the most similar words to.
+            topn (int): Number of similar words to return.
 
-    #     Returns:
-    #         list: List of tuples containing the most similar words and their similarity.
-    #     """
-    #     word = self.nlp(word)
-    #     return sorted(word, key=lambda w: self.cosine_similarity_numba(w.vector, word.vector), reverse=True)
-
-
-    # @jit(nopython=True)
-    # def cosine_similarity_numba(u:np.ndarray, v:np.ndarray):
-    #     assert(u.shape[0] == v.shape[0])
-    #     uv = 0
-    #     uu = 0
-    #     vv = 0
-    #     for i in range(u.shape[0]):
-    #         uv += u[i]*v[i]
-    #         uu += u[i]*u[i]
-    #         vv += v[i]*v[i]
-    #     cos_theta = 1
-    #     if uu != 0 and vv != 0:
-    #         cos_theta = uv/np.sqrt(uu*vv)
-    #     return cos_theta
-
+        Returns:
+            list: List of tuples containing the most similar words and their similarity.
+        """
 
 
 start_time = time.time()    
 print('Loading model...')
-# print(GenreClassification('en_core_web_lg', 'mainstream').genre_similarity('Dinosaurs'))
+print(GenreClassification('mainstream').genre_similarity('skater girl biker'))
 print("--- %s seconds ---" % round((time.time() - start_time)))
-print(GenreClassification('mainstream').genre_similarity('Dinosaurs'))
 
 # IDEAS: Take n-grams from the definition and compare them to the n-grams of the string. 
     #  Use this to increase the similarity score.
+
+# GOALS:
+    # 1. Create a function that takes in a word and/or n-gram and can return a list of similar words.
+    # 2. Create a function that takes the given input string and can reverse lookup words similar to that  
+        # dinosaur -> animal, prehistoric, extinct, etc.
 
 # TODO: Genre Tree
     # Major genres
