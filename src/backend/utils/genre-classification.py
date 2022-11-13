@@ -6,7 +6,7 @@ import numpy as np
 
 import pandas as pd
 import spacy
-from definition import Definition as defi
+# from definition import Definition as defi
 from preprocessing import Preprocessor as prep
 
 class GenreClassification():
@@ -17,8 +17,7 @@ class GenreClassification():
         self.__load_genres(csv) # Load the list of genres
 
     def __load_genres(self, csv: str) -> list:
-        """If the csv file exists, load the list of genres from the csv file.
-        Otherwise, download the list of genres from Wikipedia and save it to a csv file.
+        """Load the list of genres, with their definitions.
         
         Args:
             csv (str): Path to csv file.
@@ -26,33 +25,11 @@ class GenreClassification():
         Returns:
             None
         """
-
-        if not os.path.exists(f'{self.path}/data/genres_with_definitons.csv'):
-            self.genres = self.__add_definitions(pd.read_csv(f'{self.path}/data/{csv}.csv'))
-            self.genres.to_csv(f'{self.path}/data/genres_with_definitons.csv', index=False)
-        else:
-            self.genres = pd.read_csv(f'{self.path}/data/genres_with_definitons.csv') 
-
-    def __add_definitions(self, dataframe) -> pd.DataFrame:
-        """Add definitions to a dataframe of genres.
-
-        Args:
-            pd.DataFrame: Dataframe of genres.
-
-        Returns:
-            pd.DataFrame: Dataframe of genres with definitions.
-        """
-
-        definitions_n_grammed = []
-        definitions = []
-
-        for genre in dataframe.genre:
-            defined_word = defi().get_definition(genre)
-            definitions.append(defined_word)
-
-        dataframe['definition'] = definitions
-
-        return dataframe
+        try:
+            self.genres = pd.read_csv(f'{self.path}/data/{csv}.csv') 
+        except FileNotFoundError:
+            print('File not found, please check the path to the csv file.')
+            exit()
 
     def __generate_n_grams(self, string: str, ngram: int=2) -> list:
             """Generate n-grams from a string.
@@ -76,7 +53,6 @@ class GenreClassification():
         
         for genre in self.genres.genre:
             input = self.nlp(prep().remove_gendered_language(prep().remove_stops_and_punctions(string)))
-            print(input)
             genre_information = self.nlp(genre + str(self.genres.loc[self.genres.genre == genre].definition.values[0]))
 
             similarity = input.similarity(genre_information)
@@ -103,7 +79,7 @@ class GenreClassification():
 
 start_time = time.time()    
 print('Loading model...')
-print(GenreClassification('mainstream').genre_similarity('skater girl biker'))
+print(GenreClassification('mainstream_with_definitions').genre_similarity('feeling like clouds'))
 print("--- %s seconds ---" % round((time.time() - start_time)))
 
 # IDEAS: Take n-grams from the definition and compare them to the n-grams of the string. 

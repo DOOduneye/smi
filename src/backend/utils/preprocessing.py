@@ -1,11 +1,10 @@
 from spacy.lang.en.stop_words import STOP_WORDS
+import pandas as pd
 
 GENDERED_WORDS = set(
     """
     he she him her his hers himself
-    girl boy man woman father daughter son grandfather
-    grandmother grandson granddaughter step-sister step-father
-    step-daughter step-son 
+    girl boy
     """.split()
 )
 class Preprocessor():
@@ -33,3 +32,4 @@ class Preprocessor():
             str: String without gendered language.
         """
         return ' '.join([word for word in string.split(' ') if word not in GENDERED_WORDS])
+    
