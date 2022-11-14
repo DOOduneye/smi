@@ -79,7 +79,7 @@ class GenreClassification():
 
 start_time = time.time()    
 print('Loading model...')
-print(GenreClassification('mainstream_with_definitions').genre_similarity('feeling like clouds'))
+print(GenreClassification('mainstream_with_definitions').genre_similarity('the water is blue, dont bring sand to the beach'))
 print("--- %s seconds ---" % round((time.time() - start_time)))
 
 # IDEAS: Take n-grams from the definition and compare them to the n-grams of the string. 
